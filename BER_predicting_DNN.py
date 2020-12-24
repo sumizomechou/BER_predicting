@@ -16,24 +16,48 @@ keras.__version__
 # (train_data, train_targets), (test_data, test_targets) =  boston_housing.load_data()
 
 dir = os.getcwd()
-dataFile = dir+'\\Unknown_Data_set_all'     # 载入训练数据
-data = scio.loadmat(dataFile)
-data_all = data['train_data']
-BER_target_all = data['BER_target']
+# dataFile = dir+'\\Unknown_Data_set_all'     # 载入训练数据
+# data = scio.loadmat(dataFile)
+# data_all = data['train_data']
+# BER_target_all = data['BER_target']
+# permutation = np.random.permutation(data_all.shape[0])  # shape[0]矩阵第一维度的长度 np.random.permutation(x)随机x个数
+# shuffled_dataset = data_all[permutation, :]
+# shuffled_labels = BER_target_all[permutation]
+# train_data = shuffled_dataset[0:69999, :]  # 训练数据集
+# val_data = shuffled_dataset[70000:70999, :]    # 验证数据集
+# test_data = shuffled_dataset[71000:89999, :]   # 测试数据集
+# train_targets = shuffled_labels[0:69999, :]    # 训练目标数据集
+# val_targets = shuffled_labels[70000:70999, :]  # 验证目标数据集
+# test_targets = shuffled_labels[71000:89999, :]  # 测试目标数据集
 
+dict_data = h5py.File('Data_set_all.mat', 'r')
+data_all_temp1 = dict_data.get('train_data_all')
+data_all_temp2 = np.transpose(data_all_temp1)
+BER_target_all_temp1 = dict_data.get('BER_target_all')
+BER_target_all_temp2 = np.transpose(BER_target_all_temp1)
 
-permutation = np.random.permutation(data_all.shape[0])  # shape[0]矩阵第一维度的长度 np.random.permutation(x)随机x个数
-shuffled_dataset = data_all[permutation, :]
-shuffled_labels = BER_target_all[permutation]
+data_all_real = data_all_temp2[0:1404, :]
+BER_target_all_real = BER_target_all_temp2[0:1404, :]
+data_all_simulate = data_all_temp2[1404:5616, :]
+BER_target_all_simulate = BER_target_all_temp2[1404:5616, :]
 
+permutation_real = np.random.permutation(data_all_real.shape[0])
+permutation_simulate = np.random.permutation(data_all_simulate.shape[0])
 
-train_data = shuffled_dataset[0:69999, :]  # 训练数据集
-val_data = shuffled_dataset[70000:70999, :]    # 验证数据集
-test_data = shuffled_dataset[71000:89999, :]   # 测试数据集
+random_data_real = data_all_real[permutation_real, :]
+random_BER_real = BER_target_all_real[permutation_real, :]
 
-train_targets = shuffled_labels[0:69999, :]    # 训练目标数据集
-val_targets = shuffled_labels[70000:70999, :]  # 验证目标数据集
-test_targets = shuffled_labels[71000:89999, :]  # 测试目标数据集
+random_data_simulate = data_all_simulate[permutation_simulate, :]
+random_BER_simulate = BER_target_all_simulate[permutation_simulate]
+
+train_data = np.vstack((random_data_real[0:1204, :], random_data_simulate[0:3612, :]))  # 训练数据集
+train_targets = np.vstack((random_BER_real[0:1204, :], random_BER_simulate[0:3612, :]))    # 训练目标数据集
+
+val_data = np.vstack((random_data_real[1204:1304, :], random_data_simulate[3612:3912, :]))    # 验证数据集
+val_targets = np.vstack((random_BER_real[1204:1304, :], random_BER_simulate[3612:3912, :]))  # 验证目标数据集
+
+test_data = np.vstack((random_data_real[1304:1404, :], random_data_simulate[3912:4212, :]))   # 测试数据集
+test_targets = np.vstack((random_BER_real[1304:1404, :], random_BER_simulate[3912:4212, :]))  # 测试目标数据集
 
 mean = train_data.mean(axis=0)  # axis=0压缩行，对列求平均值
 train_data -= mean
@@ -91,7 +115,7 @@ model.save('BER_Predict_model.h5')
 # model = load_model('BER_Predict_model.h5')
 yhat = model.predict(test_data, verbose=0)
 
-dataNew = 'C://Users//dcfor//Documents//pythonProject//BEREstimate//Data_Predict.mat'
+dataNew = dir+'\\Data_Predict.mat'
 scio.savemat(dataNew, {'Predict_BER': yhat, 'Real_BER': test_targets})
 
 
